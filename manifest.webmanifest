@@ -1,13 +1,18 @@
 {
-  "name": "2048",
-  "short_name": "2048",
+  "name": "Alan Feliz",
+  "short_name": "Alan Feliz",
   "start_url": "./",
   "scope": "./",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#faf8ef",
-  "theme_color": "#faf8ef",
+  "background_color": "#1b1b2f",
+  "theme_color": "#1b1b2f",
   "icons": [
-    { "src": "icon.svg", "sizes": "any", "type": "image/svg+xml", "purpose": "any" }
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    }
   ]
 }

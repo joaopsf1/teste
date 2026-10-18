@@ -3,427 +3,572 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
-  <meta name="theme-color" content="#faf8ef">
+  <meta name="theme-color" content="#1b1b2f">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="default">
-  <meta name="apple-mobile-web-app-title" content="2048">
-  <meta name="description" content="Jogue 2048 no navegador — otimizado para celular.">
-  <title>2048</title>
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Alan Feliz">
+  <meta name="description" content="Alan Feliz: ajude o Alan a escapar dos zumbis no Edifício Sede III. Jogo em pixel art para celular.">
+  <title>Alan Feliz</title>
   <link rel="manifest" href="manifest.webmanifest">
   <link rel="icon" href="icon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="icon.svg">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap" rel="stylesheet">
   <style>
     :root {
-      --bg: #faf8ef;
-      --text: #776e65;
-      --board: #bbada0;
-      --cell: rgba(238, 228, 218, 0.35);
-      --btn: #8f7a66;
-      --gap: clamp(8px, 2.6vw, 14px);
-      --size: min(92vw, 60vh, 480px);
+      --bg: #1b1b2f;
+      --ink: #fdf6e3;
+      --accent: #ffd23f;
+      --red: #e63946;
+      --font: "Press Start 2P", ui-monospace, monospace;
     }
     * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
     html, body {
       margin: 0;
       height: 100%;
       background: var(--bg);
-      color: var(--text);
-      font-family: "Clear Sans", "Helvetica Neue", Arial, sans-serif;
+      color: var(--ink);
+      font-family: var(--font);
+      overflow: hidden;
       overscroll-behavior: none;
+      touch-action: none;
       -webkit-user-select: none;
       user-select: none;
     }
     body {
       display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 100dvh;
+    }
+    #stage { position: relative; }
+    canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+      image-rendering: pixelated;
+      image-rendering: crisp-edges;
+    }
+    .hud {
+      position: absolute;
+      left: 0; right: 0; top: 0;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: calc(env(safe-area-inset-top) + 8px) 10px 8px;
+      font-size: clamp(9px, 2.8vw, 13px);
+      text-shadow: 2px 2px 0 #000;
+      pointer-events: none;
+    }
+    .hud[hidden], #pause[hidden] { display: none; }
+    .hud .hearts { color: var(--red); letter-spacing: 2px; }
+    .screen {
+      position: absolute;
+      inset: 0;
+      display: flex;
       flex-direction: column;
       align-items: center;
       justify-content: center;
-      min-height: 100dvh;
-      padding: env(safe-area-inset-top) 16px env(safe-area-inset-bottom);
-    }
-    .wrap { width: var(--size); }
-    header {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 12px;
-    }
-    h1 {
-      margin: 0;
-      font-size: clamp(44px, 14vw, 72px);
-      line-height: 1;
-      font-weight: 800;
-    }
-    .scores { display: flex; gap: 6px; }
-    .score {
-      background: var(--board);
-      color: #fff;
-      border-radius: 6px;
-      padding: 6px 12px;
-      min-width: 64px;
+      gap: 18px;
+      padding: 24px;
       text-align: center;
-      font-weight: 700;
-      font-size: clamp(16px, 5vw, 22px);
+      background: rgba(10, 10, 25, .82);
     }
-    .score span {
-      display: block;
-      font-size: 11px;
-      text-transform: uppercase;
-      color: #eee4da;
-      letter-spacing: .5px;
+    .screen[hidden] { display: none; }
+    .screen h1 {
+      margin: 0;
+      font-size: clamp(26px, 9vw, 40px);
+      line-height: 1.25;
+      color: var(--accent);
+      text-shadow: 3px 3px 0 var(--red), 6px 6px 0 #000;
     }
-    .bar {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 8px;
-      margin-bottom: 14px;
-      font-size: 14px;
-    }
-    .bar p { margin: 0; }
-    .actions { display: flex; gap: 6px; }
+    .screen h2 { margin: 0; font-size: clamp(16px, 5vw, 22px); color: var(--red); text-shadow: 2px 2px 0 #000; }
+    .screen p { margin: 0; font-size: clamp(9px, 2.8vw, 12px); line-height: 1.8; }
+    .screen .small { opacity: .75; font-size: clamp(8px, 2.4vw, 10px); }
+    .screen canvas.hero { width: 96px; height: 144px; }
     button {
-      background: var(--btn);
-      color: #f9f6f2;
+      font-family: var(--font);
+      font-size: clamp(12px, 3.6vw, 15px);
+      color: #1b1b2f;
+      background: var(--accent);
       border: 0;
-      border-radius: 6px;
-      padding: 10px 14px;
-      font: inherit;
-      font-weight: 700;
+      padding: 14px 22px;
+      box-shadow: 0 4px 0 #b8860b, 4px 8px 0 #000;
       cursor: pointer;
       touch-action: manipulation;
     }
-    button:active { transform: scale(.96); }
-    button:disabled { opacity: .5; }
-    .board {
-      position: relative;
-      width: var(--size);
-      height: var(--size);
-      background: var(--board);
-      border-radius: 10px;
-      padding: var(--gap);
-      touch-action: none;
-    }
-    .grid, .tiles {
+    button:active { transform: translateY(4px); box-shadow: 0 0 0 #b8860b, 4px 4px 0 #000; }
+    .banner {
       position: absolute;
-      inset: var(--gap);
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      grid-template-rows: repeat(4, 1fr);
-      gap: var(--gap);
+      left: 0; right: 0; top: 38%;
+      text-align: center;
+      font-size: clamp(16px, 5.5vw, 24px);
+      color: var(--accent);
+      text-shadow: 3px 3px 0 #000;
+      pointer-events: none;
+      opacity: 0;
+      transition: opacity .3s;
     }
-    .grid div { background: var(--cell); border-radius: 6px; }
-    .tiles { display: block; }
-    .tile {
+    .banner.show { opacity: 1; }
+    #pause {
       position: absolute;
-      width: calc((100% - 3 * var(--gap)) / 4);
-      height: calc((100% - 3 * var(--gap)) / 4);
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      font-weight: 800;
-      transition: transform 110ms ease-in-out;
-      will-change: transform;
-    }
-    .tile .in {
-      width: 100%; height: 100%;
-      display: flex; align-items: center; justify-content: center;
-      border-radius: 6px;
-    }
-    .tile.new .in { animation: appear 160ms ease 100ms backwards; }
-    .tile.merged .in { animation: pop 200ms ease 100ms backwards; }
-    @keyframes appear { from { transform: scale(0); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-    @keyframes pop { 0% { transform: scale(0); } 60% { transform: scale(1.15); } 100% { transform: scale(1); } }
-    .overlay {
-      position: absolute;
-      inset: 0;
-      border-radius: 10px;
-      display: none;
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      gap: 16px;
-      background: rgba(238, 228, 218, .75);
-      font-size: clamp(32px, 10vw, 52px);
-      font-weight: 800;
-      z-index: 10;
-      animation: fade 400ms ease;
-    }
-    .overlay.win { background: rgba(237, 194, 46, .55); color: #f9f6f2; }
-    .overlay.show { display: flex; }
-    .overlay .actions button { font-size: 16px; }
-    @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
-    footer { margin-top: 16px; font-size: 13px; line-height: 1.4; text-align: center; }
-    @media (prefers-color-scheme: dark) {
-      :root { --bg: #1f1c19; --text: #d8cfc4; --board: #4a423b; --cell: rgba(238, 228, 218, 0.12); --btn: #6d5c4d; }
+      right: 10px;
+      bottom: calc(env(safe-area-inset-bottom) + 10px);
+      padding: 8px 10px;
+      font-size: 11px;
+      box-shadow: 0 3px 0 #b8860b, 3px 6px 0 #000;
     }
   </style>
 </head>
 <body>
-  <div class="wrap">
-    <header>
-      <h1>2048</h1>
-      <div class="scores">
-        <div class="score"><span>Pontos</span><b id="score">0</b></div>
-        <div class="score"><span>Recorde</span><b id="best">0</b></div>
-      </div>
-    </header>
-    <div class="bar">
-      <p>Junte os números e chegue ao <b>2048!</b></p>
-      <div class="actions">
-        <button id="undo" disabled aria-label="Desfazer">↶</button>
-        <button id="new">Novo</button>
-      </div>
+  <div id="stage">
+    <canvas id="game" width="144" height="256"></canvas>
+    <div class="hud" id="hud" hidden>
+      <span class="hearts" id="hearts"></span>
+      <span id="floor">ANDAR 1</span>
+      <span id="score">0</span>
     </div>
-    <div class="board" id="board">
-      <div class="grid" id="grid"></div>
-      <div class="tiles" id="tiles"></div>
-      <div class="overlay" id="overlay">
-        <div id="msg"></div>
-        <div class="actions">
-          <button id="keep">Continuar</button>
-          <button id="retry">Jogar de novo</button>
-        </div>
-      </div>
+    <div class="banner" id="banner"></div>
+    <button id="pause" hidden aria-label="Pausar">II</button>
+
+    <div class="screen" id="menu">
+      <h1>ALAN<br>FELIZ</h1>
+      <canvas class="hero" id="heroPreview" width="8" height="12"></canvas>
+      <p>O Alan está no<br>Edifício Sede III<br>e os zumbis petistas<br>invadiram o prédio!</p>
+      <p class="small">Arraste o dedo para andar.<br>Pegue os cafés ☕ e sobreviva<br>o máximo de andares.</p>
+      <button id="play">JOGAR</button>
+      <p class="small" id="bestMenu"></p>
     </div>
-    <footer>Deslize o dedo (ou use as setas do teclado) para mover as peças.</footer>
+
+    <div class="screen" id="paused" hidden>
+      <h2>PAUSADO</h2>
+      <button id="resume">CONTINUAR</button>
+    </div>
+
+    <div class="screen" id="over" hidden>
+      <h2>PEGARAM O ALAN!</h2>
+      <p id="final"></p>
+      <button id="again">JOGAR DE NOVO</button>
+      <p class="small">Mas o Alan continua feliz :)</p>
+    </div>
   </div>
 
   <script>
   (() => {
-    const N = 4;
-    const COLORS = {
-      2: ['#eee4da', '#776e65'], 4: ['#ede0c8', '#776e65'], 8: ['#f2b179', '#f9f6f2'],
-      16: ['#f59563', '#f9f6f2'], 32: ['#f67c5f', '#f9f6f2'], 64: ['#f65e3b', '#f9f6f2'],
-      128: ['#edcf72', '#f9f6f2'], 256: ['#edcc61', '#f9f6f2'], 512: ['#edc850', '#f9f6f2'],
-      1024: ['#edc53f', '#f9f6f2'], 2048: ['#edc22e', '#f9f6f2']
-    };
+    const W = 144, H = 256, TOP = 28; // TOP = parede com janelas
+    const canvas = document.getElementById('game');
+    const ctx = canvas.getContext('2d');
+    ctx.imageSmoothingEnabled = false;
+    const stage = document.getElementById('stage');
     const $ = id => document.getElementById(id);
-    const tilesEl = $('tiles'), scoreEl = $('score'), bestEl = $('best');
-    const overlay = $('overlay'), msg = $('msg'), keepBtn = $('keep'), undoBtn = $('undo');
 
     const store = {
       get(k) { try { return localStorage.getItem(k); } catch { return null; } },
       set(k, v) { try { localStorage.setItem(k, v); } catch {} }
     };
 
-    let grid, score, best = +store.get('2048-best') || 0, won, keepPlaying, over, history, nextId = 1;
-
-    for (let i = 0; i < N * N; i++) $('grid').appendChild(document.createElement('div'));
-
-    const empty = () => Array.from({ length: N }, () => Array(N).fill(null));
-
-    function addRandom() {
-      const free = [];
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) if (!grid[r][c]) free.push([r, c]);
-      if (!free.length) return;
-      const [r, c] = free[Math.random() * free.length | 0];
-      grid[r][c] = { id: nextId++, v: Math.random() < 0.9 ? 2 : 4, isNew: true };
+    // ---------- tela ----------
+    function fit() {
+      const vw = window.innerWidth, vh = window.innerHeight;
+      const s = Math.min(vw / W, vh / H);
+      stage.style.width = Math.floor(W * s) + 'px';
+      stage.style.height = Math.floor(H * s) + 'px';
     }
+    window.addEventListener('resize', fit);
+    fit();
 
-    function snapshot() {
-      return { grid: grid.map(row => row.map(t => t && { id: t.id, v: t.v })), score, won, keepPlaying };
-    }
-
-    function save() {
-      store.set('2048-state', JSON.stringify({ ...snapshot(), over }));
-    }
-
-    function start(fresh = true) {
-      const saved = !fresh && store.get('2048-state');
-      history = [];
-      over = false;
-      if (saved) {
-        try {
-          const s = JSON.parse(saved);
-          grid = s.grid; score = s.score; won = s.won; keepPlaying = s.keepPlaying; over = s.over;
-          grid.forEach(row => row.forEach(t => { if (t) nextId = Math.max(nextId, t.id + 1); }));
-        } catch { return start(true); }
-      } else {
-        grid = empty(); score = 0; won = false; keepPlaying = false;
-        addRandom(); addRandom();
-      }
-      tilesEl.innerHTML = '';
-      hideOverlay();
-      render();
-      if (over) showOverlay(false);
-      save();
-    }
-
-    const els = new Map();
-    function render() {
-      const seen = new Set();
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-        const t = grid[r][c];
-        if (!t) continue;
-        seen.add(t.id);
-        let el = els.get(t.id);
-        if (!el) {
-          el = document.createElement('div');
-          el.className = 'tile';
-          el.innerHTML = '<div class="in"></div>';
-          tilesEl.appendChild(el);
-          els.set(t.id, el);
-        }
-        el.classList.toggle('new', !!t.isNew);
-        el.classList.remove('merged');
-        if (t.merged) { void el.offsetWidth; el.classList.add('merged'); }
-        el.style.transform = `translate(calc(${c} * (100% + var(--gap))), calc(${r} * (100% + var(--gap))))`;
-        el.style.zIndex = t.merged ? 2 : 1;
-        const inner = el.firstChild;
-        const [bg, fg] = COLORS[t.v] || ['#3c3a32', '#f9f6f2'];
-        inner.style.background = bg;
-        inner.style.color = fg;
-        const digits = String(t.v).length;
-        inner.style.fontSize = `calc(var(--size) * ${digits <= 2 ? 0.12 : digits === 3 ? 0.1 : digits === 4 ? 0.08 : 0.065})`;
-        if (t.v >= 128) inner.style.boxShadow = `0 0 20px 4px ${bg}88`; else inner.style.boxShadow = 'none';
-        inner.textContent = t.v;
-        delete t.isNew; delete t.merged;
-      }
-      // remove tiles that disappeared (after the slide animation finishes)
-      for (const [id, el] of els) {
-        if (!seen.has(id)) {
-          els.delete(id);
-          setTimeout(() => el.remove(), 110);
-        }
-      }
-      scoreEl.textContent = score;
-      if (score > best) { best = score; store.set('2048-best', best); }
-      bestEl.textContent = best;
-      undoBtn.disabled = !history.length;
-    }
-
-    // dir: 0 up, 1 right, 2 down, 3 left
-    function move(dir) {
-      if (over || (won && !keepPlaying)) return;
-      const before = snapshot();
-      let moved = false, gained = 0;
-      const vertical = dir === 0 || dir === 2;
-      const reverse = dir === 1 || dir === 2;
-
-      for (let i = 0; i < N; i++) {
-        const cells = [];
-        for (let j = 0; j < N; j++) {
-          const k = reverse ? N - 1 - j : j;
-          cells.push(vertical ? [k, i] : [i, k]);
-        }
-        const line = cells.map(([r, c]) => grid[r][c]).filter(Boolean);
-        const out = [];
-        for (let j = 0; j < line.length; j++) {
-          const t = line[j];
-          if (j + 1 < line.length && line[j + 1].v === t.v) {
-            const loser = line[j + 1];
-            const merged = { id: nextId++, v: t.v * 2, merged: true };
-            gained += merged.v;
-            out.push({ merged, parts: [t, loser] });
-            j++;
-          } else out.push({ tile: t });
-        }
-        cells.forEach(([r, c], j) => {
-          const entry = out[j];
-          const prev = grid[r][c];
-          if (!entry) { grid[r][c] = null; if (prev) moved = true; return; }
-          if (entry.merged) {
-            moved = true;
-            // slide both parts to the target cell, then replace them with the merged tile
-            entry.parts.forEach(p => {
-              const el = els.get(p.id);
-              if (el) el.style.transform = `translate(calc(${c} * (100% + var(--gap))), calc(${r} * (100% + var(--gap))))`;
-            });
-            grid[r][c] = entry.merged;
-          } else {
-            if (prev !== entry.tile) moved = true;
-            grid[r][c] = entry.tile;
-          }
-        });
-      }
-
-      if (!moved) return;
-      history.push(before);
-      if (history.length > 20) history.shift();
-      score += gained;
-      addRandom();
-      render();
-      if (!won && grid.some(row => row.some(t => t && t.v === 2048))) {
-        won = true;
-        setTimeout(() => showOverlay(true), 300);
-      } else if (!canMove()) {
-        over = true;
-        setTimeout(() => showOverlay(false), 300);
-      }
-      save();
-      if (navigator.vibrate && gained >= 128) navigator.vibrate(15);
-    }
-
-    function canMove() {
-      for (let r = 0; r < N; r++) for (let c = 0; c < N; c++) {
-        const t = grid[r][c];
-        if (!t) return true;
-        if (c + 1 < N && grid[r][c + 1] && grid[r][c + 1].v === t.v) return true;
-        if (r + 1 < N && grid[r + 1][c] && grid[r + 1][c].v === t.v) return true;
-      }
-      return false;
-    }
-
-    function undo() {
-      const s = history.pop();
-      if (!s) return;
-      grid = s.grid; score = s.score; won = s.won; keepPlaying = s.keepPlaying; over = false;
-      tilesEl.innerHTML = ''; els.clear();
-      hideOverlay();
-      render();
-      save();
-    }
-
-    function showOverlay(win) {
-      overlay.classList.toggle('win', win);
-      msg.textContent = win ? 'Você venceu!' : 'Fim de jogo!';
-      keepBtn.style.display = win ? '' : 'none';
-      overlay.classList.add('show');
-    }
-    function hideOverlay() { overlay.classList.remove('show'); }
-
-    // keyboard
-    const KEYS = { ArrowUp: 0, ArrowRight: 1, ArrowDown: 2, ArrowLeft: 3, w: 0, d: 1, s: 2, a: 3, W: 0, D: 1, S: 2, A: 3 };
-    document.addEventListener('keydown', e => {
-      if (e.key in KEYS) { e.preventDefault(); move(KEYS[e.key]); }
-      else if ((e.ctrlKey || e.metaKey) && e.key === 'z') { e.preventDefault(); undo(); }
-    });
-
-    // touch / pointer swipe (anywhere on the page, so small screens are easy to play)
-    let sx = null, sy = null;
-    const MIN = 24;
-    const startSwipe = (x, y) => { sx = x; sy = y; };
-    const endSwipe = (x, y) => {
-      if (sx === null) return;
-      const dx = x - sx, dy = y - sy;
-      sx = sy = null;
-      if (Math.max(Math.abs(dx), Math.abs(dy)) < MIN) return;
-      if (Math.abs(dx) > Math.abs(dy)) move(dx > 0 ? 1 : 3);
-      else move(dy > 0 ? 2 : 0);
+    // ---------- sprites (pixel art) ----------
+    const PAL = {
+      H: '#3b2414', S: '#f1c27d', E: '#1a1a1a', M: '#7a2e1f', R: '#e63946', r: '#a4161a',
+      B: '#264b96', K: '#222', G: '#8bc34a', g: '#558b2f', W: '#fff59d', Y: '#ffd23f',
+      P: '#4a4e69', C: '#fafafa', c: '#6d4c41', X: '#ff5252'
     };
-    document.addEventListener('touchstart', e => {
-      if (e.target.closest('button')) return;
-      if (e.touches.length === 1) startSwipe(e.touches[0].clientX, e.touches[0].clientY);
-    }, { passive: true });
-    document.addEventListener('touchmove', e => { if (sx !== null) e.preventDefault(); }, { passive: false });
-    document.addEventListener('touchend', e => {
-      const t = e.changedTouches[0];
-      endSwipe(t.clientX, t.clientY);
+    const ALAN = [
+      [
+        '..HHHH..',
+        '.HHHHHH.',
+        '.HSSSSH.',
+        '.SESSES.',
+        '.SSSSSS.',
+        '.SMSSMS.',
+        '..SMMS..',
+        '.RRRRRR.',
+        'RRRrrRRR',
+        'SRRRRRRS',
+        '.BBBBBB.',
+        '.KK..KK.'
+      ],
+      [
+        '..HHHH..',
+        '.HHHHHH.',
+        '.HSSSSH.',
+        '.SESSES.',
+        '.SSSSSS.',
+        '.SMSSMS.',
+        '..SMMS..',
+        '.RRRRRR.',
+        'RRRrrRRR',
+        'SRRRRRRS',
+        '.BBBBBB.',
+        '..KK.KK.'
+      ]
+    ];
+    const ZOMBIE = [
+      [
+        '..gggg..',
+        '.gGGGGg.',
+        '.GXGGXG.',
+        '.GGGGGG.',
+        '.GgggGG.',
+        '..GGGG..',
+        'GRRRRRRG',
+        '.RRYRRR.',
+        '.RYYYRR.',
+        '.PPPPPP.',
+        '.PP..PP.',
+        '.KK..KK.'
+      ],
+      [
+        '..gggg..',
+        '.gGGGGg.',
+        '.GXGGXG.',
+        '.GGGGGG.',
+        '.GGgggG.',
+        '..GGGG..',
+        'GRRRRRRG',
+        '.RRYRRR.',
+        '.RYYYRR.',
+        '.PPPPPP.',
+        '.PP..PP.',
+        '..KK.KK.'
+      ]
+    ];
+    const COFFEE = [
+      '.c.c..',
+      '..c.c.',
+      'CCCCC.',
+      'CccCCC',
+      'CccCC.',
+      '.CCC..'
+    ];
+
+    function makeSprite(rows, flip = false) {
+      const c = document.createElement('canvas');
+      c.width = rows[0].length; c.height = rows.length;
+      const x = c.getContext('2d');
+      rows.forEach((row, y) => [...row].forEach((ch, i) => {
+        if (PAL[ch]) { x.fillStyle = PAL[ch]; x.fillRect(flip ? c.width - 1 - i : i, y, 1, 1); }
+      }));
+      return c;
+    }
+    const sprAlan = ALAN.map(f => [makeSprite(f), makeSprite(f, true)]);
+    const sprZombie = ZOMBIE.map(f => [makeSprite(f), makeSprite(f, true)]);
+    const sprCoffee = makeSprite(COFFEE);
+
+    // prévia do herói no menu
+    $('heroPreview').getContext('2d').drawImage(sprAlan[0][0], 0, 0);
+    $('heroPreview').style.imageRendering = 'pixelated';
+
+    // ---------- cenário (pré-renderizado) ----------
+    const bg = document.createElement('canvas');
+    bg.width = W; bg.height = H;
+    (() => {
+      const b = bg.getContext('2d');
+      // carpete
+      for (let y = TOP; y < H; y += 8) for (let x = 0; x < W; x += 8) {
+        b.fillStyle = ((x + y) / 8) % 2 ? '#5c6378' : '#565d71';
+        b.fillRect(x, y, 8, 8);
+      }
+      // parede
+      b.fillStyle = '#2b2d42'; b.fillRect(0, 0, W, TOP);
+      b.fillStyle = '#8d99ae'; b.fillRect(0, TOP - 3, W, 3);
+      // janelas com vista da cidade
+      for (let x = 6; x < W - 10; x += 34) {
+        b.fillStyle = '#9ad1ff'; b.fillRect(x, 6, 26, 15);
+        b.fillStyle = '#6fa8dc'; b.fillRect(x, 15, 26, 6);
+        b.fillStyle = '#3d5a80';
+        b.fillRect(x + 2, 12, 4, 9); b.fillRect(x + 9, 9, 5, 12); b.fillRect(x + 17, 13, 6, 8);
+        b.fillStyle = '#edf2f4'; b.fillRect(x + 12, 6, 2, 15); b.fillRect(x, 13, 26, 1);
+      }
+      // plantas nos cantos
+      const plant = (x, y) => {
+        b.fillStyle = '#795548'; b.fillRect(x + 1, y + 6, 6, 4);
+        b.fillStyle = '#2e7d32'; b.fillRect(x, y, 8, 6);
+        b.fillStyle = '#43a047'; b.fillRect(x + 2, y - 2, 4, 4);
+      };
+      plant(3, TOP + 4); plant(W - 11, TOP + 4); plant(3, H - 14); plant(W - 11, H - 14);
+      // elevadores (por onde os zumbis entram)
+      b.fillStyle = '#b0b7c3';
+      b.fillRect(W / 2 - 10, H - 4, 20, 4);
+      b.fillRect(0, H / 2 - 10, 3, 20); b.fillRect(W - 3, H / 2 - 10, 3, 20);
+    })();
+
+    // ---------- estado ----------
+    let state = 'menu', last = 0, best = +store.get('alan-best') || 0;
+    let alan, zombies, coffees, score, time, floor, lives, inv, boost, spawnT, coffeeT, frameT, shake;
+    $('bestMenu').textContent = best ? `RECORDE: ${best}` : '';
+
+    function reset() {
+      alan = { x: W / 2, y: H / 2 + 20, dir: 0, moving: false };
+      zombies = []; coffees = [];
+      score = 0; time = 0; floor = 1; lives = 3; inv = 0; boost = 0;
+      spawnT = 1.2; coffeeT = 4; frameT = 0; shake = 0;
+      updateHud();
+    }
+
+    function updateHud() {
+      $('hearts').textContent = '♥'.repeat(lives) + '♡'.repeat(Math.max(0, 3 - lives));
+      $('floor').textContent = 'ANDAR ' + floor;
+      $('score').textContent = Math.floor(score);
+    }
+
+    let bannerT;
+    function banner(text) {
+      const b = $('banner');
+      b.textContent = text;
+      b.classList.add('show');
+      clearTimeout(bannerT);
+      bannerT = setTimeout(() => b.classList.remove('show'), 1400);
+    }
+
+    function spawnZombie() {
+      const side = Math.random() * 4 | 0;
+      let x, y;
+      if (side === 0) { x = W / 2 + (Math.random() - .5) * 16; y = H + 12; }          // elevador de baixo
+      else if (side === 1) { x = -10; y = H / 2 + (Math.random() - .5) * 16; }        // elevador esquerdo
+      else if (side === 2) { x = W + 10; y = H / 2 + (Math.random() - .5) * 16; }     // elevador direito
+      else { x = 12 + Math.random() * (W - 24); y = TOP - 4; }                        // escada de cima
+      const speed = 14 + floor * 2.5 + Math.random() * 8;
+      zombies.push({ x, y, speed, dir: 0, wob: Math.random() * 6, anim: Math.random() });
+    }
+
+    function spawnCoffee() {
+      if (coffees.length >= 2) return;
+      coffees.push({ x: 14 + Math.random() * (W - 28), y: TOP + 18 + Math.random() * (H - TOP - 36), t: 8 });
+    }
+
+    // ---------- controles ----------
+    const keys = {};
+    addEventListener('keydown', e => {
+      keys[e.key.toLowerCase()] = true;
+      if (e.key.startsWith('Arrow')) e.preventDefault();
+      if ((e.key === 'Escape' || e.key === 'p') && (state === 'play' || state === 'pause')) togglePause();
     });
-    // mouse drag for desktop
-    document.addEventListener('mousedown', e => { if (!e.target.closest('button')) startSwipe(e.clientX, e.clientY); });
-    document.addEventListener('mouseup', e => endSwipe(e.clientX, e.clientY));
+    addEventListener('keyup', e => { keys[e.key.toLowerCase()] = false; });
 
-    $('new').addEventListener('click', () => start(true));
-    $('retry').addEventListener('click', () => start(true));
-    keepBtn.addEventListener('click', () => { keepPlaying = true; hideOverlay(); save(); });
-    undoBtn.addEventListener('click', undo);
+    // joystick virtual: toque em qualquer lugar e arraste
+    const stick = { active: false, ox: 0, oy: 0, dx: 0, dy: 0, id: null };
+    const toLocal = (cx, cy) => {
+      const r = canvas.getBoundingClientRect();
+      return [(cx - r.left) / r.width * W, (cy - r.top) / r.height * H];
+    };
+    canvas.addEventListener('pointerdown', e => {
+      if (state !== 'play') return;
+      stick.active = true; stick.id = e.pointerId;
+      [stick.ox, stick.oy] = toLocal(e.clientX, e.clientY);
+      stick.dx = stick.dy = 0;
+      canvas.setPointerCapture(e.pointerId);
+    });
+    canvas.addEventListener('pointermove', e => {
+      if (!stick.active || e.pointerId !== stick.id) return;
+      const [x, y] = toLocal(e.clientX, e.clientY);
+      stick.dx = x - stick.ox; stick.dy = y - stick.oy;
+      const max = 18, d = Math.hypot(stick.dx, stick.dy);
+      if (d > max) { // origem acompanha o dedo, como nos jogos de celular
+        stick.ox = x - stick.dx / d * max; stick.oy = y - stick.dy / d * max;
+        stick.dx = x - stick.ox; stick.dy = y - stick.oy;
+      }
+    });
+    const endStick = e => { if (e.pointerId === stick.id) { stick.active = false; stick.dx = stick.dy = 0; } };
+    canvas.addEventListener('pointerup', endStick);
+    canvas.addEventListener('pointercancel', endStick);
+    document.addEventListener('touchmove', e => e.preventDefault(), { passive: false });
 
-    start(false);
+    function inputVector() {
+      let x = 0, y = 0;
+      if (keys.arrowleft || keys.a) x -= 1;
+      if (keys.arrowright || keys.d) x += 1;
+      if (keys.arrowup || keys.w) y -= 1;
+      if (keys.arrowdown || keys.s) y += 1;
+      if (stick.active) {
+        const d = Math.hypot(stick.dx, stick.dy);
+        if (d > 2) { x = stick.dx / 18; y = stick.dy / 18; }
+      }
+      const m = Math.hypot(x, y);
+      return m > 1 ? [x / m, y / m] : [x, y];
+    }
+
+    // ---------- loop ----------
+    function update(dt) {
+      time += dt;
+      frameT += dt;
+      score += dt * 10;
+      inv = Math.max(0, inv - dt);
+      boost = Math.max(0, boost - dt);
+      shake = Math.max(0, shake - dt);
+
+      const newFloor = 1 + Math.floor(time / 20);
+      if (newFloor !== floor) { floor = newFloor; banner('ANDAR ' + floor + '!'); score += 100; }
+
+      // Alan
+      const [ix, iy] = inputVector();
+      const sp = boost ? 85 : 58;
+      alan.x = Math.max(8, Math.min(W - 8, alan.x + ix * sp * dt));
+      alan.y = Math.max(TOP + 8, Math.min(H - 12, alan.y + iy * sp * dt));
+      alan.moving = Math.abs(ix) + Math.abs(iy) > 0.05;
+      if (ix < -0.1) alan.dir = 1; else if (ix > 0.1) alan.dir = 0;
+
+      // zumbis
+      spawnT -= dt;
+      if (spawnT <= 0 && zombies.length < 45) {
+        spawnZombie();
+        spawnT = Math.max(0.3, 1.5 - floor * 0.13) * (0.7 + Math.random() * 0.6);
+      }
+      for (const z of zombies) {
+        const dx = alan.x - z.x, dy = alan.y - z.y, d = Math.hypot(dx, dy) || 1;
+        z.wob += dt * 3;
+        const wx = Math.cos(z.wob) * 0.35, wy = Math.sin(z.wob * 1.3) * 0.35;
+        z.x += (dx / d + wx) * z.speed * dt;
+        z.y += (dy / d + wy) * z.speed * dt;
+        z.dir = dx < 0 ? 1 : 0;
+        z.anim += dt;
+      }
+      // zumbis se empurram para não virarem um bolo só
+      for (let i = 0; i < zombies.length; i++) for (let j = i + 1; j < zombies.length; j++) {
+        const a = zombies[i], b = zombies[j];
+        const dx = b.x - a.x, dy = b.y - a.y, d = Math.hypot(dx, dy);
+        if (d > 0 && d < 12) {
+          const p = (12 - d) / 2 / d;
+          a.x -= dx * p; a.y -= dy * p; b.x += dx * p; b.y += dy * p;
+        }
+      }
+
+      // colisão com zumbi
+      if (!inv) {
+        for (const z of zombies) {
+          if (Math.abs(z.x - alan.x) < 9 && Math.abs(z.y - alan.y) < 14) {
+            lives--;
+            inv = 1.6; shake = 0.3;
+            if (navigator.vibrate) navigator.vibrate(120);
+            // afasta os zumbis próximos para dar uma chance
+            zombies = zombies.filter(o => Math.hypot(o.x - alan.x, o.y - alan.y) > 40);
+            if (lives <= 0) return gameOver();
+            banner('AI!');
+            break;
+          }
+        }
+      }
+
+      // cafés
+      coffeeT -= dt;
+      if (coffeeT <= 0) { spawnCoffee(); coffeeT = 6 + Math.random() * 5; }
+      coffees = coffees.filter(c => {
+        c.t -= dt;
+        if (Math.abs(c.x - alan.x) < 12 && Math.abs(c.y - alan.y) < 15) {
+          score += 50; boost = 3;
+          banner('CAFÉ! +50');
+          if (navigator.vibrate) navigator.vibrate(20);
+          return false;
+        }
+        return c.t > 0;
+      });
+
+      updateHud();
+    }
+
+    function drawSprite(frames, x, y, anim, dir) {
+      const f = frames[Math.floor(anim * 6) % 2][dir];
+      ctx.drawImage(f, Math.round(x - 8), Math.round(y - 12), 16, 24);
+    }
+
+    function render() {
+      ctx.save();
+      if (shake) ctx.translate((Math.random() - .5) * 4, (Math.random() - .5) * 4);
+      ctx.drawImage(bg, 0, 0);
+
+      // cafés (piscam quando vão sumir)
+      for (const c of coffees) {
+        if (c.t < 2 && Math.floor(c.t * 8) % 2) continue;
+        ctx.drawImage(sprCoffee, Math.round(c.x - 6), Math.round(c.y - 6 + Math.sin(time * 4) * 1), 12, 12);
+      }
+
+      // desenha por ordem de profundidade
+      const actors = zombies.map(z => ({ y: z.y, draw: () => {
+        ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(z.x - 6), Math.round(z.y + 10), 12, 3);
+        drawSprite(sprZombie, z.x, z.y, z.anim, z.dir);
+      } }));
+      actors.push({ y: alan.y, draw: () => {
+        ctx.fillStyle = 'rgba(0,0,0,.25)'; ctx.fillRect(Math.round(alan.x - 6), Math.round(alan.y + 10), 12, 3);
+        if (inv && Math.floor(inv * 12) % 2) return;
+        if (boost) { ctx.fillStyle = 'rgba(255,210,63,.35)'; ctx.fillRect(Math.round(alan.x - 10), Math.round(alan.y - 14), 20, 28); }
+        drawSprite(sprAlan, alan.x, alan.y, alan.moving ? frameT : 0, alan.dir);
+      } });
+      actors.sort((a, b) => a.y - b.y).forEach(a => a.draw());
+
+      // joystick
+      if (stick.active && state === 'play') {
+        ctx.globalAlpha = .35;
+        ctx.fillStyle = '#fff';
+        ctx.beginPath(); ctx.arc(stick.ox, stick.oy, 18, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = .6;
+        ctx.beginPath(); ctx.arc(stick.ox + stick.dx, stick.oy + stick.dy, 7, 0, Math.PI * 2); ctx.fill();
+        ctx.globalAlpha = 1;
+      }
+      ctx.restore();
+    }
+
+    function loop(t) {
+      const dt = Math.min(0.05, (t - last) / 1000 || 0);
+      last = t;
+      if (state === 'play') update(dt);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    // ---------- telas ----------
+    function show(id) {
+      ['menu', 'paused', 'over'].forEach(s => { $(s).hidden = s !== id; });
+      const playing = id === null;
+      $('hud').hidden = !playing && state !== 'pause';
+      $('pause').hidden = !playing;
+    }
+
+    function startGame() {
+      reset();
+      state = 'play';
+      show(null);
+      banner('ANDAR 1');
+    }
+
+    function gameOver() {
+      state = 'over';
+      const s = Math.floor(score);
+      const record = s > best;
+      if (record) { best = s; store.set('alan-best', best); }
+      $('final').innerHTML = `PONTOS: ${s}<br>ANDAR: ${floor}<br>${record ? 'NOVO RECORDE!' : 'RECORDE: ' + best}`;
+      $('bestMenu').textContent = `RECORDE: ${best}`;
+      $('hud').hidden = false;
+      show('over');
+      $('pause').hidden = true;
+    }
+
+    function togglePause() {
+      if (state === 'play') { state = 'pause'; show('paused'); $('hud').hidden = false; }
+      else if (state === 'pause') { state = 'play'; show(null); }
+    }
+
+    $('play').addEventListener('click', startGame);
+    $('again').addEventListener('click', startGame);
+    $('resume').addEventListener('click', togglePause);
+    $('pause').addEventListener('click', togglePause);
+    document.addEventListener('visibilitychange', () => { if (document.hidden && state === 'play') togglePause(); });
+
+    // menu de fundo: alguns zumbis passeando
+    reset();
+    for (let i = 0; i < 6; i++) spawnZombie();
+    requestAnimationFrame(loop);
 
     if ('serviceWorker' in navigator) {
       window.addEventListener('load', () => navigator.serviceWorker.register('sw.js').catch(() => {}));
