@@ -1,5 +1,5 @@
 // Cache simples para o jogo funcionar offline.
-const CACHE = '2048-v1';
+const CACHE = 'alan-feliz-v1';
 const FILES = ['./', 'index.html', 'manifest.webmanifest', 'icon.svg'];
 
 self.addEventListener('install', e => {
